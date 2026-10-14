@@ -1,0 +1,2 @@
+# (removed) The sample SDP pipeline is not used by this bundle: the Kafka streams run as a
+# continuous job task (see kafka_streaming_ingestion.job.yml). Safe to delete from the repo.

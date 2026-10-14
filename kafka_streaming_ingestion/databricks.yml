@@ -1,0 +1,61 @@
+# This is a Declarative Automation Bundle definition for kafka_streaming_ingestion.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: kafka_streaming_ingestion
+  uuid: b529b173-f11b-45e4-9ec1-4c1748b8a1a9
+
+include:
+  - resources/*.yml
+
+# Variable declarations. Values are assigned per environment in the targets below -
+# the pipeline code never changes between environments, only these values do.
+variables:
+  catalog:
+    description: Unity Catalog holding the pipeline tables
+  schema:
+    description: Schema for the bronze/silver/gold tables
+  kafka_bootstrap_servers:
+    description: Bootstrap servers of the environment's Kafka cluster
+    default: broker1:9092,broker2:9092
+  kafka_topic:
+    description: Kafka topic to ingest
+    default: events
+  kafka_secret_scope:
+    description: Secret scope holding the Kafka user/pwd credentials (one per env)
+    default: kafka
+  checkpoint_root:
+    description: Root path (UC volume) for streaming checkpoints
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-77575419-6ad2.cloud.databricks.com
+    variables:
+      catalog: main
+      schema: dbdemos_data_ingestion
+      kafka_bootstrap_servers: broker1:9092,broker2:9092
+      kafka_topic: events
+      kafka_secret_scope: kafka
+      checkpoint_root: /Volumes/main/dbdemos_data_ingestion/raw_data
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-77575419-6ad2.cloud.databricks.com
+      # We explicitly deploy to /Workspace/Users/kkotev@deloittece.com to make sure we only have a single copy.
+      root_path: /Workspace/Users/kkotev@deloittece.com/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: main
+      schema: kafka_streaming_prod
+      kafka_bootstrap_servers: broker1:9092,broker2:9092
+      kafka_topic: events
+      kafka_secret_scope: kafka_prod
+      checkpoint_root: /Volumes/main/kafka_streaming_prod/checkpoints
+    permissions:
+      - user_name: kkotev@deloittece.com
+        level: CAN_MANAGE

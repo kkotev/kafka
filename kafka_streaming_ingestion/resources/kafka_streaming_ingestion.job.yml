@@ -1,0 +1,32 @@
+# The Kafka ingestion job: runs the parameterized notebook as a continuous task,
+# so the three streaming queries restart automatically on failure.
+resources:
+  jobs:
+    kafka_streaming_ingestion_job:
+      name: kafka-streaming-ingestion-${bundle.target}
+
+      # Continuous job = long-running streaming workload with auto-restart.
+      # Deployed PAUSED - nothing starts until you start it in the Jobs UI.
+      continuous:
+        pause_status: PAUSED
+
+      tasks:
+        - task_key: kafka_streams
+          notebook_task:
+            notebook_path: ../src/notebooks/kafka_streaming_ingestion.ipynb
+            # Everything env-specific arrives here - the notebook itself is
+            # byte-for-byte identical in dev and prod.
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              kafka_bootstrap_servers: ${var.kafka_bootstrap_servers}
+              kafka_topic: ${var.kafka_topic}
+              kafka_secret_scope: ${var.kafka_secret_scope}
+              checkpoint_root: ${var.checkpoint_root}
+          environment_key: kafka_serverless
+
+      environments:
+        - environment_key: kafka_serverless
+          spec:
+            environment_version: "5"
+            dependencies: []
